@@ -1,3 +1,4 @@
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -8,6 +9,15 @@ from sklearn.metrics import confusion_matrix, classification_report
 
 from tensorflow import keras
 from tensorflow.keras import layers
+
+
+# Crear estructura carpetas
+base_path = "resultados"
+img_path = os.path.join(base_path, "imagenes")
+metrics_path = os.path.join(base_path, "metricas")
+
+os.makedirs(img_path, exist_ok=True)
+os.makedirs(metrics_path, exist_ok=True)
 
 
 # Cargar datos
@@ -34,7 +44,6 @@ model = keras.Sequential([
     layers.Dense(10, activation='softmax')
 ])
 
-# Compilación
 model.compile(
     optimizer=keras.optimizers.Adam(learning_rate=0.001),
     loss='sparse_categorical_crossentropy',
@@ -53,11 +62,18 @@ history = model.fit(
 
 # Evaluación
 test_loss, test_acc = model.evaluate(X_test, y_test)
-print(f"\nTest Accuracy: {test_acc:.4f}")
 
-# Predicciones
 y_pred = model.predict(X_test)
 y_pred_classes = np.argmax(y_pred, axis=1)
+
+report = classification_report(y_test, y_pred_classes)
+
+# Guardar métricas en archivo txt
+with open(os.path.join(metrics_path, "metricas.txt"), "w") as f:
+    f.write(f"Test Accuracy: {test_acc:.4f}\n\n")
+    f.write("Classification Report:\n")
+    f.write(report)
+
 
 # Matriz de confusión
 cm = confusion_matrix(y_test, y_pred_classes)
@@ -67,13 +83,11 @@ sns.heatmap(cm, annot=True, fmt='d')
 plt.xlabel("Predicho")
 plt.ylabel("Real")
 plt.title("Matriz de Confusión")
-plt.show()
+plt.tight_layout()
+plt.savefig(os.path.join(img_path, "matriz_confusion.png"))
+plt.close()
 
-# Métricas
-print("\nClassification Report:")
-print(classification_report(y_test, y_pred_classes))
-
-# Ejemplos correctos
+# 5 Bien clasificadas
 correct = np.where(y_test == y_pred_classes)[0]
 
 plt.figure(figsize=(10, 4))
@@ -82,9 +96,12 @@ for i in range(5):
     plt.imshow(X_test[correct[i]].reshape(8, 8), cmap='gray')
     plt.title(f"{y_pred_classes[correct[i]]}")
     plt.axis('off')
-plt.show()
 
-# Ejemplos incorrectos
+plt.tight_layout()
+plt.savefig(os.path.join(img_path, "bien_clasificadas.png"))
+plt.close()
+
+# 5 Mal clasificadas
 incorrect = np.where(y_test != y_pred_classes)[0]
 
 plt.figure(figsize=(10, 4))
@@ -93,4 +110,9 @@ for i in range(5):
     plt.imshow(X_test[incorrect[i]].reshape(8, 8), cmap='gray')
     plt.title(f"P:{y_pred_classes[incorrect[i]]} R:{y_test[incorrect[i]]}")
     plt.axis('off')
-plt.show()
+
+plt.tight_layout()
+plt.savefig(os.path.join(img_path, "mal_clasificadas.png"))
+plt.close()
+
+print("\nResultados guardados en carpeta 'resultados'")
